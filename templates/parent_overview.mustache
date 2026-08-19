@@ -1,0 +1,84 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_rofeoparent/parent_overview
+
+    Structural markup only - visual styling lives in theme_rofeo, not here.
+
+    Example context (json):
+    {
+        "children": [
+            {
+                "fullname": "Amina Haddad",
+                "courses": [
+                    {
+                        "fullname": "Robotics Level 1",
+                        "hasprogress": true,
+                        "progress": 62,
+                        "progresslabel": "Progress for Robotics Level 1",
+                        "hasgrade": true,
+                        "grade": "15.00",
+                        "showgradelink": true,
+                        "gradeurl": "https://example.com/grade/report/overview/index.php?id=2&userid=5",
+                        "showactivitylink": true,
+                        "activityurl": "https://example.com/report/outline/user.php?id=5&course=2&mode=outline"
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div class="rofeoparent-children">
+    {{#children}}
+    <div class="rofeoparent-child">
+        <div class="rofeoparent-child-name">{{fullname}}</div>
+        <ul class="rofeoparent-courses">
+            {{#courses}}
+            <li class="rofeoparent-course">
+                <span class="rofeoparent-course-name">{{fullname}}</span>
+                {{#hasprogress}}
+                <div class="rofeoparent-progress">
+                    <div class="rofeoparent-progress-bar"
+                         style="--progress: {{progress}};"
+                         role="progressbar"
+                         aria-valuenow="{{progress}}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-label="{{progresslabel}}"></div>
+                    <span class="rofeoparent-progress-text">{{progress}}%</span>
+                </div>
+                {{/hasprogress}}
+                {{#hasgrade}}
+                <span class="rofeoparent-grade">
+                    <span class="rofeoparent-grade-label">{{#str}} gradelabel, block_rofeoparent {{/str}}</span>
+                    <span class="rofeoparent-grade-value">{{grade}}</span>
+                </span>
+                {{/hasgrade}}
+                <span class="rofeoparent-links">
+                    {{#showgradelink}}
+                    <a class="rofeoparent-link rofeoparent-link-grades" href="{{gradeurl}}">{{#str}} gradereportlink, block_rofeoparent {{/str}}</a>
+                    {{/showgradelink}}
+                    {{#showactivitylink}}
+                    <a class="rofeoparent-link rofeoparent-link-activity" href="{{activityurl}}">{{#str}} activityreportlink, block_rofeoparent {{/str}}</a>
+                    {{/showactivitylink}}
+                </span>
+            </li>
+            {{/courses}}
+        </ul>
+    </div>
+    {{/children}}
+</div>
