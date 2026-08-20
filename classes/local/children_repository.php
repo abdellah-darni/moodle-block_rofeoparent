@@ -24,15 +24,16 @@
 
 namespace block_rofeoparent\local;
 
+use completion_info;
 use context;
 use context_course;
 use context_user;
 use core\user;
-use core_completion\progress;
 use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->libdir . '/completionlib.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/grade/querylib.php');
 
@@ -107,7 +108,7 @@ class children_repository {
             $entry->id = $course->id;
             $entry->fullname = format_string(get_course_display_name_for_list($course), true, ['context' => $coursecontext]);
 
-            $entry->progress = progress::get_course_progress_percentage($course, $childid);
+            $entry->progress = self::get_child_progress($course, $childid);
 
             $entry->showgrades = (bool) $course->showgrades;
             $entry->grade = null;
@@ -124,5 +125,86 @@ class children_repository {
         }
 
         return $courseentries;
+    }
+
+    /**
+     * Returns the child's own course progress percentage, or null if completion
+     * isn't enabled/tracked for this child in this course.
+     *
+     * PINNED WORKAROUND - do not replace this with a plain call to
+     * \core_completion\progress::get_course_progress_percentage($course, $childid).
+     *
+     * That method (completion/classes/progress.php in Moodle core) delegates its
+     * denominator to completion_info::get_user_activities_with_completion($userid),
+     * which in turn calls completion_info::get_activities(). As of Moodle 5.2.1,
+     * get_activities() builds its modinfo like this (lib/completionlib.php, the
+     * get_activities() method):
+     *
+     *     $modinfo = get_fast_modinfo($this->course);
+     *
+     * with no userid argument, so it silently resolves to the *session* user
+     * (get_fast_modinfo() -> modinfo::instance() defaults an empty userid to
+     * $USER->id - see course/classes/modinfo.php, the instance() method). Every
+     * cm_info visibility flag used to build that denominator - uservisible,
+     * uservisibleoncoursepage, available - is then evaluated for that session
+     * user (course/classes/cm_info.php, obtain_dynamic_data()/update_user_visible()),
+     * never for the $userid argument that was passed in. Concretely: when a
+     * parent (session user) views this block, the activity count comes from the
+     * *parent's* visibility, not the child's, so the percentage silently drifts
+     * from what the child sees on their own Dashboard - this is what produced
+     * the reported symptom (1/11 = 9% for the parent's session vs 1/9 = 11% for
+     * the child's, same completion data, same course).
+     *
+     * The numerator (count_modules_completed()) and the two early-exit checks
+     * (is_enabled(), is_tracked_user()) are plain, correctly userid-parameterised
+     * DB lookups with no such bug - they are reused unchanged below, along with
+     * is_course_complete()'s 100% short-circuit. Only the activity-enumeration
+     * loop is replaced, by building modinfo directly for $childid so every
+     * visibility flag resolves for the child instead of the viewer.
+     *
+     * Recheck this comparison against completion/classes/progress.php and
+     * lib/completionlib.php on any major Moodle upgrade - if a future core
+     * version threads the userid through get_activities() (or otherwise fixes
+     * this), delete this method and go back to calling core's directly.
+     *
+     * @param stdClass $course Must include enablecompletion (see enrol_get_users_courses() call above).
+     * @param int $childid
+     * @return float|null Percentage 0-100, or null if there is nothing to track.
+     */
+    private static function get_child_progress(stdClass $course, int $childid): ?float {
+        $completion = new completion_info($course);
+
+        if (!$completion->is_enabled()) {
+            return null;
+        }
+
+        if (!$completion->is_tracked_user($childid)) {
+            return null;
+        }
+
+        if ($completion->is_course_complete($childid)) {
+            return 100.0;
+        }
+
+        // Mirrors completion_info::get_activities() + get_user_activities_with_completion(),
+        // except modinfo is built for $childid so is_visible_on_course_page() (date, group,
+        // capability and hidden-section restrictions) resolves for the child, not the viewer.
+        $modinfo = get_fast_modinfo($course, $childid);
+        $trackedcmids = [];
+        foreach ($modinfo->get_cms() as $cm) {
+            if ($cm->completion != COMPLETION_TRACKING_NONE
+                    && !$cm->deletioninprogress
+                    && $cm->is_visible_on_course_page()) {
+                $trackedcmids[] = $cm->id;
+            }
+        }
+
+        if (!$trackedcmids) {
+            return null;
+        }
+
+        $completed = $completion->count_modules_completed($childid, $trackedcmids);
+
+        return ($completed / count($trackedcmids)) * 100;
     }
 }
