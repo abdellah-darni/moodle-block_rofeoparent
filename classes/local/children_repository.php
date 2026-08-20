@@ -113,8 +113,8 @@ class children_repository {
             $entry->grade = null;
             if ($entry->showgrades) {
                 $grade = grade_get_course_grade($childid, $course->id);
-                if ($grade && !$grade->hidden && $grade->str_grade !== '-') {
-                    $entry->grade = $grade->str_grade;
+                if ($grade && !$grade->hidden && $grade->grade !== null && $grade->grade !== false) {
+                    $entry->grade = $grade->str_long_grade;
                 }
             }
 

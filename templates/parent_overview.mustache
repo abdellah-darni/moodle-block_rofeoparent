@@ -18,6 +18,8 @@
     @template block_rofeoparent/parent_overview
 
     Structural markup only - visual styling lives in theme_rofeo, not here.
+    Child name uses <h4> because core's block chrome (lib/templates/block.mustache)
+    already wraps the block title in <h3>, so content headings start one level down.
 
     Example context (json):
     {
@@ -31,7 +33,7 @@
                         "progress": 62,
                         "progresslabel": "Progress for Robotics Level 1",
                         "hasgrade": true,
-                        "grade": "15.00",
+                        "grade": "15,00 / 20,00",
                         "showgradelink": true,
                         "gradeurl": "https://example.com/grade/report/overview/index.php?id=2&userid=5",
                         "showactivitylink": true,
@@ -44,41 +46,43 @@
 }}
 <div class="rofeoparent-children">
     {{#children}}
-    <div class="rofeoparent-child">
-        <div class="rofeoparent-child-name">{{fullname}}</div>
-        <ul class="rofeoparent-courses">
+    <section class="rofeoparent-child">
+        <h4 class="rofeoparent-child-name">{{fullname}}</h4>
+        <div class="rofeoparent-courses">
             {{#courses}}
-            <li class="rofeoparent-course">
-                <span class="rofeoparent-course-name">{{fullname}}</span>
-                {{#hasprogress}}
-                <div class="rofeoparent-progress">
-                    <div class="rofeoparent-progress-bar"
-                         style="--progress: {{progress}};"
-                         role="progressbar"
-                         aria-valuenow="{{progress}}"
-                         aria-valuemin="0"
-                         aria-valuemax="100"
-                         aria-label="{{progresslabel}}"></div>
-                    <span class="rofeoparent-progress-text">{{progress}}%</span>
+            <div class="rofeoparent-course">
+                <div class="rofeoparent-course-name">{{fullname}}</div>
+                <div class="rofeoparent-course-meta">
+                    {{#hasprogress}}
+                    <div class="rofeoparent-progress">
+                        <div class="rofeoparent-progress-bar"
+                             style="--progress: {{progress}};"
+                             role="progressbar"
+                             aria-valuenow="{{progress}}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-label="{{progresslabel}}"></div>
+                        <span class="rofeoparent-progress-text">{{progress}}%</span>
+                    </div>
+                    {{/hasprogress}}
+                    {{#hasgrade}}
+                    <span class="rofeoparent-grade">
+                        <span class="rofeoparent-grade-label">{{#str}} gradelabel, block_rofeoparent {{/str}}</span>
+                        <span class="rofeoparent-grade-value">{{grade}}</span>
+                    </span>
+                    {{/hasgrade}}
+                    <span class="rofeoparent-links">
+                        {{#showgradelink}}
+                        <a class="rofeoparent-link rofeoparent-link-grades" href="{{gradeurl}}">{{#str}} gradereportlink, block_rofeoparent {{/str}}</a>
+                        {{/showgradelink}}
+                        {{#showactivitylink}}
+                        <a class="rofeoparent-link rofeoparent-link-activity" href="{{activityurl}}">{{#str}} activityreportlink, block_rofeoparent {{/str}}</a>
+                        {{/showactivitylink}}
+                    </span>
                 </div>
-                {{/hasprogress}}
-                {{#hasgrade}}
-                <span class="rofeoparent-grade">
-                    <span class="rofeoparent-grade-label">{{#str}} gradelabel, block_rofeoparent {{/str}}</span>
-                    <span class="rofeoparent-grade-value">{{grade}}</span>
-                </span>
-                {{/hasgrade}}
-                <span class="rofeoparent-links">
-                    {{#showgradelink}}
-                    <a class="rofeoparent-link rofeoparent-link-grades" href="{{gradeurl}}">{{#str}} gradereportlink, block_rofeoparent {{/str}}</a>
-                    {{/showgradelink}}
-                    {{#showactivitylink}}
-                    <a class="rofeoparent-link rofeoparent-link-activity" href="{{activityurl}}">{{#str}} activityreportlink, block_rofeoparent {{/str}}</a>
-                    {{/showactivitylink}}
-                </span>
-            </li>
+            </div>
             {{/courses}}
-        </ul>
-    </div>
+        </div>
+    </section>
     {{/children}}
 </div>
