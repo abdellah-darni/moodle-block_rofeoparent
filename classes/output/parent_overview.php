@@ -69,9 +69,10 @@ class parent_overview implements renderable, templatable {
 
                 $courseexport['showgradelink'] = $course->showgrades;
                 if ($course->showgrades) {
-                    $courseexport['gradeurl'] = (new moodle_url('/grade/report/overview/index.php', [
+                    $courseexport['gradeurl'] = (new moodle_url('/course/user.php', [
+                        'mode' => 'grade',
                         'id' => $course->id,
-                        'userid' => $child->id,
+                        'user' => $child->id,
                     ]))->out(false);
                 }
 
